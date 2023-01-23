@@ -1,5 +1,5 @@
 import { defer, Observable } from "rxjs";
-import { first, ignoreElements, map, shareReplay, switchMap } from "rxjs/operators";
+import { first, ignoreElements, map, retry, shareReplay, switchMap } from "rxjs/operators";
 import { Modbus } from "./modbus";
 import { loadAllRegisters } from "./registers";
 import { Tcp } from "./tcp";
@@ -43,7 +43,9 @@ export class Nibe {
 
                 return reg;
             }),
-            switchMap(reg => this.readInternal(reg, timeoutMsec)),
+            switchMap(reg => this.readInternal(reg, timeoutMsec).pipe(
+                retry({ count: 3 }),
+            )),
         );
     }
 
@@ -62,7 +64,9 @@ export class Nibe {
 
                 return reg;
             }),
-            switchMap(reg => this.writeInteral(reg, value, timeoutMsec)),
+            switchMap(reg => this.writeInteral(reg, value, timeoutMsec).pipe(
+                retry({ count: 3 }),
+            )),
             ignoreElements(),
         );
     }
@@ -89,6 +93,7 @@ export class Nibe {
                     label: register.label,
                     unit: register.unit,
                     formatted: `${rawValue / register.divisionFactor}${register.unit}`,
+                    rawValue,
                     raw: Buffer.from(v.data),
                 };
                 return value;

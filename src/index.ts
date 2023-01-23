@@ -1,46 +1,43 @@
-import { catchError, concat, concatMap, EMPTY, filter, mergeMap, switchMap } from 'rxjs';
+import { Observable } from 'rxjs';
 import { Nibe } from './communication/nibe';
 
-const address = 'tcp://NIBE-06545022180002.local:502';
+export interface NodeMessage extends Record<string, any> {
+    payload: any;
+    topic?: string;
+}
 
-/*
-id:12802 - room setpoint (living)
-id:12803 - room setpoint (night zone)
-*/
+export interface NodeInterface {
+    credentials: { [key: string]: string };
 
-Nibe.createTcp(address, './registers.csv')
-    .pipe(
-        // concatMap(n => n.registers$.pipe(
-        //     concatMap(r => r),
-        //     mergeMap(r => n.readRegister(r.label).pipe(catchError(() => EMPTY)), 5),
-        // )),
-        // filter(r => r.unit === '°C'),
-        // filter(r => r.value === 23 || r.value === 22),
-        switchMap(n => concat(
-            // n.readRegister('id:12802'),
-            // n.writeRegister('id:12802', 23),
-            // n.readRegister('id:12802'),
+    on(type: 'input', callback: (msg: NodeMessage, send?: (msgToSend: NodeMessage) => void, done?: (err?: any) => void) => void): void;
+    on(type: 'close', callback: () => void): void;
 
-            // n.readRegister('Hot water demand mode'),
-            // n.writeRegister('Hot water demand mode', 0),
-            // n.readRegister('Hot water demand mode'),
+    send(msg: any): void;
 
-            n.writeRegister('Room sensor set point value climate system 2', 23),
-            n.readRegister('Room sensor set point value climate system 2'),
-            n.writeRegister('Room sensor set point value climate system 3', 22),
-            n.readRegister('Room sensor set point value climate system 3'),
+    log(msg: string): void;
+    warn(msg: string): void;
+    error(msg: string): void;
 
-            n.writeRegister('Use room sensor climate system 2', 1),
-            n.readRegister('Use room sensor climate system 2'),
-            n.writeRegister('Use room sensor climate system 3', 1),
-            n.readRegister('Use room sensor climate system 3'),
+    status(params: {
+        fill: 'red' | 'green' | 'yellow' | 'blue' | 'grey';
+        text: string;
+        shape: 'ring' | 'dot';
+    } | {}): void;
 
+    context(): {
+        get<T>(key: string): T;
+        set<T>(key: string, value: T): void;
+    };
+}
 
-            // n.readRegister('id:12803'),
-            // n.writeRegister('id:12803', 24.5),
-        )),
-    )
-    .subscribe({
-        next: (x) => console.log(x),
-        complete: () => console.log('complete!'),
-    });
+export interface Logger {
+    trace(message?: any): void;
+    debug(message?: any): void;
+    info(message?: any): void;
+    warn(message?: any): void;
+    error(message?: any): void;
+}
+
+export interface ConfigNode {
+    nibe$: Observable<Nibe>;
+}

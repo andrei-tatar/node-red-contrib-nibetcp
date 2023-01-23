@@ -1,0 +1,62 @@
+<script type="text/javascript">
+  (function () {
+    RED.nodes.registerType("nibe-register", {
+      category: "nibe",
+      color: "rgb(235, 227, 141)",
+      icon: "nibe.png",
+      defaults: {
+        name: {
+          value: "",
+        },
+        register: {
+          value: "",
+          required: true,
+        },
+        nibe: {
+          type: "nibe-config",
+          required: true,
+        },
+        interval: {
+          value: "30",
+          validate: RED.validators.number(),
+        },
+        timeout: {
+          value: "3",
+          validate: RED.validators.number(),
+          required: true,
+        },
+      },
+      inputs: 1,
+      outputs: 1,
+      paletteLabel: "nibe register",
+      label: function () {
+        return this.name || this.register || "nibe register";
+      },
+    });
+  })();
+</script>
+
+<script type="text/x-red" data-template-name="nibe-register">
+  <div class="form-row">
+      <label for="node-input-name"><i class="fa fa-tag"></i> Name</label>
+      <input type="text" id="node-input-name">
+  </div>
+  <div class="form-row">
+      <label for="node-input-nibe"><i class="fa fa-table"></i> Config</label>
+      <input type="text" id="node-input-nibe">
+  </div>
+  <div class="form-row">
+      <label for="node-input-register"><i class="fa fa-id-card"></i> Register</label>
+      <input type="text" id="node-input-register">
+  </div>
+  <div class="form-row">
+      <label for="node-input-interval"><i class="fa fa-clock-o"></i> Interval sec</label>
+      <input type="text" id="node-input-interval">
+  </div>
+  <div class="form-row">
+    <label for="node-input-timeout"><i class="fa fa-times-circle-o"></i> Timeout sec</label>
+    <input type="text" id="node-input-timeout">
+  </div>
+</script>
+
+<script type="text/x-red" data-help-name="noraf-register"></script>

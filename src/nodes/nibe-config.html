@@ -1,0 +1,40 @@
+<script type="text/javascript">
+  (function () {
+    RED.nodes.registerType("nibe-config", {
+      category: "config",
+      defaults: {
+        name: {
+          value: "nibe config",
+        },
+        address: {
+          value: "tcp://NIBE-serial.local:502",
+          required: true,
+        },
+        registerFile: {
+          value: "",
+        },
+      },
+      paletteLabel: "nibe config",
+      label: function () {
+        return this.name || "nibe config";
+      },
+    });
+  })();
+</script>
+
+<script type="text/x-red" data-template-name="nibe-config">
+    <div class="form-row">
+        <label for="node-config-input-name"><i class="fa fa-tag"></i> Name</label>
+        <input type="text" id="node-config-input-name">
+    </div>
+    <div class="form-row">
+        <label for="node-config-input-address"><i class="fa fa-thumb-tack"></i> Address</label>
+        <input type="text" id="node-config-input-address">
+    </div>
+    <div class="form-row">
+      <label for="node-config-input-registerFile"><i class="fa fa-table"></i> Reg. CSV</label>
+      <input type="text" id="node-config-input-registerFile">
+  </div>
+</script>
+
+<script type="text/x-red" data-help-name="noraf-config"></script>
