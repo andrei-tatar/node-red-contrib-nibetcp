@@ -17,7 +17,7 @@ module.exports = function (RED: any) {
                 return;
             }
 
-            const registerFile = config.registerFile || pathJoin(__dirname, '../../../registers.csv');
+            const registerFile = config.registerFile || pathJoin(__dirname, '../../registers.csv');
 
             this.nibe$ = concat(
                 defer(() => {
