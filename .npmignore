@@ -2,3 +2,4 @@
 !/dist
 !/examples
 /dist/tsconfig.tsbuildinfo
+!registers.csv
