@@ -1,4 +1,5 @@
 import { concat, defer, EMPTY, ReplaySubject } from 'rxjs';
+import { join as pathJoin } from 'path';
 import { retry, share } from 'rxjs/operators';
 import { ConfigNode, NodeInterface } from '..';
 import { Nibe } from '../communication/nibe';
@@ -16,7 +17,7 @@ module.exports = function (RED: any) {
                 return;
             }
 
-            const registerFile = config.registerFile || (__dirname + '../../../registers.csv');
+            const registerFile = config.registerFile || pathJoin(__dirname, '../../../registers.csv');
 
             this.nibe$ = concat(
                 defer(() => {
