@@ -12,6 +12,10 @@ module.exports = function (RED: any) {
                 return;
             }
 
+            const forceWrite = !!config.force;
+            const timeoutMsec = (+config.timeout || 1) * 1000;
+            const intervalMsec = (+config.interval || 1) * 1000;
+
             const subscription = concat(
                 defer(() => {
                     this.status({ fill: 'yellow', text: 'standby' })
@@ -19,10 +23,10 @@ module.exports = function (RED: any) {
                 }),
                 combineLatest([
                     nibeConfig.nibe$,
-                    interval((+config.interval || 1) * 1000).pipe(startWith(0)),
+                    interval(intervalMsec).pipe(startWith(0)),
                 ])
             ).pipe(
-                switchMap(([n]) => n.readRegister(config.register, (+config.timeout || 1) * 1000).pipe(
+                switchMap(([n]) => n.readRegister(config.register, timeoutMsec).pipe(
                     catchError(err => {
                         this.warn(`Error reading ${config.register}: ${err}`);
                         return EMPTY;
@@ -38,7 +42,7 @@ module.exports = function (RED: any) {
             this.on('input', (msg, _, done) => {
                 nibeConfig.nibe$.pipe(
                     first(),
-                    switchMap(n => n.writeRegister(config.register, +msg.payload, (+config.timeout || 1) * 1000)),
+                    switchMap(n => n.writeRegister(config.register, +msg.payload, forceWrite, timeoutMsec)),
                 ).subscribe({
                     error: (err) => {
                         done

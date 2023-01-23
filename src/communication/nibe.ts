@@ -49,7 +49,7 @@ export class Nibe {
         );
     }
 
-    writeRegister(label: string, value: number, timeoutMsec?: number) {
+    writeRegister(label: string, value: number, force: boolean, timeoutMsec?: number) {
         return this.registers$.pipe(
             first(),
             map(registers => {
@@ -64,16 +64,17 @@ export class Nibe {
 
                 return reg;
             }),
-            switchMap(reg => this.writeInteral(reg, value, timeoutMsec).pipe(
+            switchMap(reg => this.writeInteral(reg, value, force, timeoutMsec).pipe(
                 retry({ count: 3 }),
             )),
             ignoreElements(),
         );
     }
 
-    private writeInteral(register: RegisterDefinition, value: number, timeoutMsec = DEFAULT_TIMEOUT) {
+    private writeInteral(register: RegisterDefinition, value: number, force: boolean, timeoutMsec = DEFAULT_TIMEOUT) {
         const raw = value * register.divisionFactor;
-        if (register.minValue !== null && raw < register.minValue ||
+        if (!force &&
+            register.minValue !== null && raw < register.minValue ||
             register.maxValue !== null && raw > register.maxValue) {
             throw new Error(`Invalid value for register ${register.address}: ${raw}`);
         }

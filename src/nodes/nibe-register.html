@@ -25,6 +25,9 @@
           validate: RED.validators.number(),
           required: true,
         },
+        force: {
+          value: false,
+        },
       },
       inputs: 1,
       outputs: 1,
@@ -38,24 +41,28 @@
 
 <script type="text/x-red" data-template-name="nibe-register">
   <div class="form-row">
-      <label for="node-input-name"><i class="fa fa-tag"></i> Name</label>
-      <input type="text" id="node-input-name">
+    <label for="node-input-name"><i class="fa fa-tag"></i> Name</label>
+    <input type="text" id="node-input-name">
   </div>
   <div class="form-row">
-      <label for="node-input-nibe"><i class="fa fa-table"></i> Config</label>
-      <input type="text" id="node-input-nibe">
+    <label for="node-input-nibe"><i class="fa fa-table"></i> Config</label>
+    <input type="text" id="node-input-nibe">
   </div>
   <div class="form-row">
-      <label for="node-input-register"><i class="fa fa-id-card"></i> Register</label>
-      <input type="text" id="node-input-register">
+    <label for="node-input-register"><i class="fa fa-id-card"></i> Register</label>
+    <input type="text" id="node-input-register">
   </div>
   <div class="form-row">
-      <label for="node-input-interval"><i class="fa fa-clock-o"></i> Interval sec</label>
-      <input type="text" id="node-input-interval">
+    <label for="node-input-interval"><i class="fa fa-clock-o"></i> Interval sec</label>
+    <input type="text" id="node-input-interval">
   </div>
   <div class="form-row">
     <label for="node-input-timeout"><i class="fa fa-times-circle-o"></i> Timeout sec</label>
     <input type="text" id="node-input-timeout">
+  </div>
+  <div class="form-row">
+    <label style="width:auto" for="node-input-force"><i class="fa fa-refresh"></i> Force write </label>
+    <input type="checkbox" id="node-input-force" style="display:inline-block; width:auto; vertical-align:top;">
   </div>
 </script>
 
