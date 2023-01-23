@@ -1,5 +1,5 @@
 {
-  "name": "node-red-contrib-nibetcp",
+  "name": "@andrei-tatar/node-red-contrib-nibetcp",
   "version": "1.0.0",
   "description": "Node-red integration for Nibe S series heatpumps using modbus over TCP",
   "keywords": [
@@ -11,7 +11,7 @@
   "scripts": {
     "clean": "rm -rf build",
     "build": "tsc && cp src/nodes/*.html dist/nodes/ && cp -r src/nodes/icons dist/nodes/icons",
-    "pub": "npm run clean && npm run build && npm test && npm publish --access=public --registry https://registry.npmjs.org/"
+    "pub": "npm run clean && npm run build && npm publish --registry https://registry.npmjs.org/ --access=public"
   },
   "repository": {
     "type": "git",
