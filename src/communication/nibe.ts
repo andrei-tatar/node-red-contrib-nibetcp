@@ -73,9 +73,9 @@ export class Nibe {
 
     private writeInteral(register: RegisterDefinition, value: number, force: boolean, timeoutMsec = DEFAULT_TIMEOUT) {
         const raw = value * register.divisionFactor;
-        if (!force &&
+        if (!force && (
             register.minValue !== null && raw < register.minValue ||
-            register.maxValue !== null && raw > register.maxValue) {
+            register.maxValue !== null && raw > register.maxValue)) {
             throw new Error(`Invalid value for register ${register.address}: ${raw}`);
         }
         const data = this.writeValue(register.size, raw);
