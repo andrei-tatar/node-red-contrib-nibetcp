@@ -1,5 +1,5 @@
 import { Socket } from 'net';
-import { Observable, Subject } from "rxjs";
+import { Observable, Subject } from 'rxjs';
 
 export class Tcp {
     private _data = new Subject<Buffer>();

@@ -1,5 +1,5 @@
-import { merge, Observable } from "rxjs";
-import { Tcp } from "./tcp";
+import { merge, Observable } from 'rxjs';
+import { Tcp } from './tcp';
 import { concatMap, filter, first, ignoreElements, map, scan, share, timeout } from 'rxjs/operators';
 
 const LABELS_BY_CODEID = new Map<number, string>([

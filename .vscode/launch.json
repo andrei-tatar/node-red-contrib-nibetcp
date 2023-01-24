@@ -6,7 +6,7 @@
             "request": "launch",
             "name": "Launch",
             "args": [
-                "src/index.ts",
+                "src/scan.ts",
             ],
             "runtimeArgs": [
                 "--nolazy",

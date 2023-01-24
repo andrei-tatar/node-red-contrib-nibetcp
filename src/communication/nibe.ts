@@ -1,9 +1,9 @@
-import { defer, Observable } from "rxjs";
-import { first, ignoreElements, map, retry, shareReplay, switchMap } from "rxjs/operators";
-import { Modbus } from "./modbus";
-import { loadAllRegisters } from "./registers";
-import { Tcp } from "./tcp";
-import { RegisterDefinition, RegisterSize, RegisterValue } from "./types";
+import { defer, Observable } from 'rxjs';
+import { first, ignoreElements, map, retry, shareReplay, switchMap } from 'rxjs/operators';
+import { Modbus } from './modbus';
+import { loadAllRegisters } from './registers';
+import { Tcp } from './tcp';
+import { RegisterDefinition, RegisterSize, RegisterValue } from './types';
 
 const DEFAULT_TIMEOUT = 1000;
 
@@ -71,7 +71,7 @@ export class Nibe {
         );
     }
 
-    private writeInteral(register: RegisterDefinition, value: number, force: boolean, timeoutMsec = DEFAULT_TIMEOUT) {
+    private writeInteral(register: RegisterDefinition, value: number, force = false, timeoutMsec = DEFAULT_TIMEOUT) {
         const raw = value * register.divisionFactor;
         if (!force && (
             register.minValue !== null && raw < register.minValue ||
