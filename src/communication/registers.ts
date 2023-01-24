@@ -27,15 +27,23 @@ export async function loadAllRegisters(registerFile: string): Promise<RegisterDe
     const maxValue = headers.indexOf('Max value');
     const defaultValue = headers.indexOf('Default value');
 
-    return lines
+    const registers = lines
         .slice(1)
         .map(l => {
             const parts = l.split('\t');
             const size = parseInt(parts[sizeIndex], 10) || 5;
+            const registerType = parts[typeIndex];
+            let registerAddress = parseInt(parts[address], 10);
+            if (registerType === 'MODBUS_INPUT_REGISTER') {
+                registerAddress += 40000;
+            }
+            if (registerType === 'MODBUS_HOLDING_REGISTER') {
+                registerAddress += 30000;
+            }
             return {
                 label: parts[titleIndex],
-                type: parts[typeIndex],
-                address: parseInt(parts[address], 10),
+                type: registerType,
+                address: registerAddress,
                 divisionFactor: parseInt(parts[divisionFactor], 10),
                 unit: parts[unit],
                 sizeOfVariable: size,
@@ -46,6 +54,7 @@ export async function loadAllRegisters(registerFile: string): Promise<RegisterDe
             };
         })
         .filter(validate);
+    return registers;
 }
 
 function validate(reg: RegisterFromFile): reg is RegisterDefinition {

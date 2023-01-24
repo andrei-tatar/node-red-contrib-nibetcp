@@ -32,13 +32,13 @@ export class Nibe {
         );
     }
 
-    readRegister(label: string, timeoutMsec?: number) {
+    readRegister(labelOrAddress: string | number, timeoutMsec?: number) {
         return this.registers$.pipe(
             first(),
             map(registers => {
-                const reg = registers.find(r => r.label === label);
+                const reg = this.findRegister(labelOrAddress, registers);
                 if (!reg) {
-                    throw new Error(`Could not find register '${label}'`);
+                    throw new Error(`Could not find register '${labelOrAddress}'`);
                 }
 
                 return reg;
@@ -49,17 +49,17 @@ export class Nibe {
         );
     }
 
-    writeRegister(label: string, value: number, force: boolean, timeoutMsec?: number) {
+    writeRegister(labelOrAddress: string | number, value: number, force: boolean, timeoutMsec?: number) {
         return this.registers$.pipe(
             first(),
             map(registers => {
-                const reg = registers.find(r => r.label === label);
+                const reg = this.findRegister(labelOrAddress, registers);
                 if (!reg) {
-                    throw new Error(`Could not find register '${label}'`);
+                    throw new Error(`Could not find register '${labelOrAddress}'`);
                 }
 
                 if (reg.type !== 'MODBUS_HOLDING_REGISTER') {
-                    throw new Error(`Readonly register '${label}'`);
+                    throw new Error(`Readonly register '${labelOrAddress}'`);
                 }
 
                 return reg;
@@ -71,6 +71,19 @@ export class Nibe {
         );
     }
 
+    private findRegister(labelOrAddress: string | number, list: RegisterDefinition[]): RegisterDefinition | undefined {
+        const address = typeof labelOrAddress === 'number'
+            ? labelOrAddress
+            : parseInt(labelOrAddress, 10);
+        if (!isNaN(address) && address >= 30000) {
+            return list.find(r => r.address === address);
+        }
+
+        const match = list.filter(r => r.label === labelOrAddress);
+        match.sort((a, b) => a.type.localeCompare(b.type));
+        return match[0];
+    }
+
     private writeInteral(register: RegisterDefinition, value: number, force = false, timeoutMsec = DEFAULT_TIMEOUT) {
         const raw = value * register.divisionFactor;
         if (!force && (
@@ -79,14 +92,14 @@ export class Nibe {
             throw new Error(`Invalid value for register ${register.address}: ${raw}`);
         }
         const data = this.writeValue(register.size, raw);
-        return this.modbus.writeRegisters(register.address, data, timeoutMsec);
+        return this.modbus.writeRegisters(register.address % 10000, data, timeoutMsec);
     }
 
     private readInternal(register: RegisterDefinition, timeoutMsec = DEFAULT_TIMEOUT): Observable<RegisterValue> {
         const registerCount = register.size === 's32' || register.size === 'u32' ? 2 : 1;
         const readKind = register.type === 'MODBUS_HOLDING_REGISTER' ? 'READ_HOLDING' : 'READ_INPUT';
 
-        return this.modbus.readRegisters(readKind, register.address, registerCount, timeoutMsec).pipe(
+        return this.modbus.readRegisters(readKind, register.address % 10000, registerCount, timeoutMsec).pipe(
             map(v => {
                 const rawValue = this.readValue(v.data, register.size);
                 const value: RegisterValue = {

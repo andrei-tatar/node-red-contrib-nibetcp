@@ -1,10 +1,9 @@
 import { EMPTY, from, MonoTypeOperatorFunction } from 'rxjs';
-import { concatMap, tap, filter, mergeMap, catchError, toArray, scan, skip, repeat, map } from 'rxjs/operators';
+import { concatMap, tap, mergeMap, catchError, toArray, scan, skip, repeat, map, filter } from 'rxjs/operators';
 import { Nibe } from './communication/nibe';
 import { RegisterDefinition, RegisterValue } from './communication/types';
 
-const IGNORE = [2176, 2177, 3224, 3304, 3344, 3624];
-
+const IGNORE = [42176, 33224, 33304, 33344, 33624];
 Nibe.createTcp('tcp://NIBE-06545022180002.local:502', './registers.csv').pipe(
     concatMap(n => n.registers$.pipe(
         tap(() => console.log(`scan start`)),
@@ -35,7 +34,7 @@ function readAllRegisters(nibe: Nibe, regs: RegisterDefinition[]) {
     return from(regs).pipe(
         filter(reg => !IGNORE.includes(reg.address)),
         mergeMap(reg =>
-            nibe.readRegister(reg.label, 1000)
+            nibe.readRegister(reg.address, 1000)
                 .pipe(
                     catchError(err => {
                         console.warn(`failed reading ${reg.address}: ${err}`);
