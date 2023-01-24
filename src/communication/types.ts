@@ -14,6 +14,7 @@ export interface RegisterDefinition {
 }
 
 export interface RegisterValue {
+    address: number;
     value: number;
     rawValue: number;
     raw: Buffer;

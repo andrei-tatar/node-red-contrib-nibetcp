@@ -106,6 +106,7 @@ export class Nibe {
                     value: rawValue / register.divisionFactor,
                     label: register.label,
                     unit: register.unit,
+                    address: register.address,
                     formatted: `${rawValue / register.divisionFactor}${register.unit}`,
                     rawValue,
                     raw: Buffer.from(v.data),
