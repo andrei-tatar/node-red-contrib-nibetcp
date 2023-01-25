@@ -11,7 +11,15 @@ const LABELS_BY_CODEID = new Map<number, string>([
 const CODEID_BY_LABEL = new Map<string, number>([...LABELS_BY_CODEID.entries()].map(([key, value]) => [value, key]));
 
 export class Modbus {
-    private static transactionId = 0;
+    private static _transactionId = 0;
+    private static get transactionId() {
+        Modbus._transactionId++;
+        if (Modbus._transactionId > 0xffff) {
+            Modbus._transactionId = 0;
+        }
+        return Modbus._transactionId;
+    }
+
     private readonly packages$: Observable<ModbusPackage>;
 
     constructor(
@@ -103,7 +111,7 @@ export class Modbus {
     }
 
     readRegisters(kind: 'READ_INPUT' | 'READ_HOLDING', startAddress: number, count = 1, timeoutMsec = 1000) {
-        const transactionId = ++Modbus.transactionId;
+        const transactionId = Modbus.transactionId;
         const data = Buffer.alloc(4);
         data.writeUInt16BE(startAddress, 0);
         data.writeUInt16BE(count, 2);
@@ -133,7 +141,7 @@ export class Modbus {
             throw new Error(`Invalid data length ${data.length}`);
         }
 
-        const transactionId = ++Modbus.transactionId;
+        const transactionId = Modbus.transactionId;
         const writeCount = data.length / 2;
         let pckg: Buffer;
         let writeType: 'WRITE_SINGLE_REGISTER' | 'WRITE_MULTIPLE_REGISTERS';
