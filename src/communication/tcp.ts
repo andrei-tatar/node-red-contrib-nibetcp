@@ -32,6 +32,8 @@ export class Tcp {
 
             const wrapper = new Tcp(client);
             client.on('connect', () => observer.next(wrapper));
+            client.on('error', (err) => observer.error(err));
+            client.on('close', () => observer.error(new Error('Socket was closed')));
 
             return () => {
                 wrapper.end();
