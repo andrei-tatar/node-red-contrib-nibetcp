@@ -40,4 +40,5 @@ export interface Logger {
 
 export interface ConfigNode {
     nibe$: Observable<Nibe>;
+    reset(): void;
 }

@@ -1,4 +1,4 @@
-import { combineLatest, concat, defer, interval, EMPTY, } from 'rxjs';
+import { combineLatest, concat, defer, interval, EMPTY, Subject, merge, } from 'rxjs';
 import { finalize, first, catchError, startWith, switchMap, tap, distinctUntilChanged } from 'rxjs/operators';
 import { ConfigNode, NodeInterface } from '..';
 
@@ -15,21 +15,33 @@ module.exports = function (RED: any) {
             const forceWrite = !!config.force;
             const timeoutMsec = (+config.timeout || 1) * 1000;
             const intervalMsec = (+config.interval || 1) * 1000;
+            const forceRead = new Subject<void>();
+            let consecutiveErrors = 0;
 
             const subscription = concat(
                 defer(() => {
+                    consecutiveErrors = 0;
                     this.status({ fill: 'yellow', text: 'standby' })
                     return EMPTY;
                 }),
                 combineLatest([
                     nibeConfig.nibe$,
-                    interval(intervalMsec).pipe(startWith(0)),
+                    merge(
+                        interval(intervalMsec).pipe(startWith(0)),
+                        forceRead,
+                    ),
                 ])
             ).pipe(
                 switchMap(([n]) => n.readRegister(config.register, timeoutMsec).pipe(
                     catchError(err => {
                         this.warn(`Error reading ${config.register}: ${err}`);
+                        if (++consecutiveErrors >= 3) {
+                            nibeConfig.reset();
+                        };
                         return EMPTY;
+                    }),
+                    tap(() => {
+                        consecutiveErrors = 0;
                     }),
                 )),
                 distinctUntilChanged((a, b) => a.formatted === b.formatted),
@@ -49,7 +61,10 @@ module.exports = function (RED: any) {
                             ? done?.(err)
                             : this.warn(`Error writing ${msg.payload} to ${config.register}: ${err}`);
                     },
-                    complete: () => done?.(),
+                    complete: () => {
+                        forceRead.next();
+                        done?.();
+                    },
                 });
             });
 
