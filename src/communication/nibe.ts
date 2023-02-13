@@ -132,8 +132,8 @@ export class Nibe {
             case 'u32':
             case 's32':
                 data = Buffer.alloc(4);
-                data.writeUint16BE(value & 0xFFFF, 0);
-                data.writeUint16BE((value >> 16) & 0xFFFF, 2);
+                data.writeUint16BE((value >> 16) & 0xFFFF, 0);
+                data.writeUint16BE(value & 0xFFFF, 2);
                 break;
             default: throw new Error(`Register size not supported '${size}'`);
         }
