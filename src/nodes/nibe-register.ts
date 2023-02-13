@@ -48,10 +48,15 @@ module.exports = function (RED: any) {
                 tap(v => this.status({ fill: 'blue', text: v.formatted })),
                 finalize(() => this.status({ fill: 'red', text: 'disconnected' })),
             ).subscribe({
-                next: (value) => this.send({ payload: value }),
+                next: (value) => this.send({ payload: value, topic: config.topic }),
             });
 
             this.on('input', (msg, _, done) => {
+                if (config.filter && config.topic && msg.topic !== config.topic) {
+                    done?.();
+                    return;
+                }
+
                 nibeConfig.nibe$.pipe(
                     first(),
                     switchMap(n => n.writeRegister(config.register, +msg.payload, forceWrite, timeoutMsec)),
