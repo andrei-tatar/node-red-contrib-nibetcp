@@ -44,7 +44,6 @@ module.exports = function (RED: any) {
                         consecutiveErrors = 0;
                     }),
                 )),
-                distinctUntilChanged((a, b) => a.formatted === b.formatted),
                 tap(v => this.status({ fill: 'blue', text: v.formatted })),
                 finalize(() => this.status({ fill: 'red', text: 'disconnected' })),
             ).subscribe({
