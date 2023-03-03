@@ -1,6 +1,6 @@
-import { concat, defer, EMPTY, merge, ReplaySubject, Subject } from 'rxjs';
+import { merge, ReplaySubject, Subject, throwError } from 'rxjs';
 import { join as pathJoin } from 'path';
-import { concatMap, debounceTime, first, ignoreElements, map, retry, share, switchMap } from 'rxjs/operators';
+import { debounceTime, first, ignoreElements, retry, share, switchMap } from 'rxjs/operators';
 import { ConfigNode, NodeInterface } from '..';
 import { Nibe } from '../communication/nibe';
 
@@ -20,28 +20,19 @@ module.exports = function (RED: any) {
             const registerFile = config.registerFile || pathJoin(__dirname, '../../registers.csv');
             const reset$ = new Subject<void>();
 
-            this.nibe$ = concat(
-                defer(() => {
-                    this.status({ fill: 'red', shape: 'dot', text: 'Disconnected' });
-                    return EMPTY;
-                }),
-                merge(
-                    Nibe.createTcp(address, registerFile),
-                    reset$.pipe(
-                        debounceTime(1000),
-                        first(),
-                        map(_ => {
-                            throw new Error('Reset connection due to too many errors');
-                        }),
-                        ignoreElements(),
+            this.nibe$ = merge(
+                Nibe.createTcp(address, registerFile),
+                reset$.pipe(
+                    debounceTime(1000),
+                    first(),
+                    switchMap(_ =>
+                        throwError(() => new Error('Reset connection'))
                     ),
+                    ignoreElements(),
                 ),
             ).pipe(
                 retry({ delay: 20000 }),
-                share({
-                    connector: () => new ReplaySubject(1),
-                    resetOnRefCountZero: true,
-                }),
+                share({ connector: () => new ReplaySubject(1) }),
             );
 
             this.reset = () => reset$.next();

@@ -1,5 +1,5 @@
 import { combineLatest, concat, defer, interval, EMPTY, Subject, merge, } from 'rxjs';
-import { finalize, first, catchError, startWith, switchMap, tap, distinctUntilChanged } from 'rxjs/operators';
+import { finalize, first, catchError, startWith, switchMap, tap } from 'rxjs/operators';
 import { ConfigNode, NodeInterface } from '..';
 
 module.exports = function (RED: any) {
@@ -35,16 +35,17 @@ module.exports = function (RED: any) {
                 switchMap(([n]) => n.readRegister(config.register, timeoutMsec).pipe(
                     catchError(err => {
                         this.warn(`Error reading ${config.register}: ${err}`);
+                        this.status({ fill: 'red', text: `${err}` })
                         if (++consecutiveErrors >= 3) {
                             nibeConfig.reset();
                         };
                         return EMPTY;
                     }),
-                    tap(() => {
-                        consecutiveErrors = 0;
-                    }),
                 )),
-                tap(v => this.status({ fill: 'blue', text: v.formatted })),
+                tap(v => {
+                    this.status({ fill: 'blue', text: v.formatted });
+                    consecutiveErrors = 0;
+                }),
                 finalize(() => this.status({ fill: 'red', text: 'disconnected' })),
             ).subscribe({
                 next: (value) => this.send({ payload: value, topic: config.topic }),
