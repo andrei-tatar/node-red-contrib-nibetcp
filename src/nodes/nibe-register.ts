@@ -1,5 +1,5 @@
 import { combineLatest, concat, defer, interval, EMPTY, Subject, merge, } from 'rxjs';
-import { finalize, first, catchError, startWith, switchMap, tap } from 'rxjs/operators';
+import { finalize, catchError, startWith, switchMap, tap, take, first, retry } from 'rxjs/operators';
 import { ConfigNode, NodeInterface } from '..';
 
 module.exports = function (RED: any) {
@@ -47,6 +47,7 @@ module.exports = function (RED: any) {
                     consecutiveErrors = 0;
                 }),
                 finalize(() => this.status({ fill: 'red', text: 'disconnected' })),
+                retry({ delay: 20000 }),
             ).subscribe({
                 next: (value) => this.send({ payload: value, topic: config.topic }),
             });

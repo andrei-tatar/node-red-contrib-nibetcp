@@ -1,6 +1,6 @@
 import { merge, ReplaySubject, Subject, throwError } from 'rxjs';
 import { join as pathJoin } from 'path';
-import { debounceTime, first, ignoreElements, retry, share, switchMap } from 'rxjs/operators';
+import { debounceTime, first, ignoreElements, share, switchMap } from 'rxjs/operators';
 import { ConfigNode, NodeInterface } from '..';
 import { Nibe } from '../communication/nibe';
 
@@ -31,7 +31,6 @@ module.exports = function (RED: any) {
                     ignoreElements(),
                 ),
             ).pipe(
-                retry({ delay: 20000 }),
                 share({ connector: () => new ReplaySubject(1) }),
             );
 
