@@ -4,16 +4,17 @@ import { Modbus } from './modbus';
 import { loadAllRegisters } from './registers';
 import { Tcp } from './tcp';
 import { RegisterDefinition, RegisterSize, RegisterValue } from './types';
+import { Logger } from '../log';
 
 const DEFAULT_TIMEOUT = 1000;
 
 export class Nibe {
-    static createTcp(address: string, registerFilePath: string) {
+    static createTcp(address: string, registerFilePath: string, logger?: Logger) {
         const nibe = Tcp
-            .create(address)
+            .create(address, logger?.scope('tcp'))
             .pipe(
-                map(x => new Modbus(x)),
-                map(m => new Nibe(m, registerFilePath)),
+                map(x => new Modbus(x, logger?.scope('modbus'))),
+                map(m => new Nibe(m, registerFilePath, logger?.scope('nibe'))),
             );
 
         return nibe;
@@ -23,9 +24,11 @@ export class Nibe {
 
     private constructor(
         private readonly modbus: Modbus,
-        private registerFile: string) {
+        private registerFile: string,
+        private logger?: Logger) {
 
         this.registers$ = defer(async () => {
+            logger?.trace('loading registers', { file: this.registerFile });
             return await loadAllRegisters(this.registerFile);
         }).pipe(
             shareReplay(1),
@@ -38,6 +41,7 @@ export class Nibe {
             map(registers => {
                 const reg = this.findRegister(labelOrAddress, registers);
                 if (!reg) {
+                    this.logger?.trace('could not find register', { labelOrAddress });
                     throw new Error(`Could not find register '${labelOrAddress}'`);
                 }
 
@@ -85,6 +89,8 @@ export class Nibe {
     }
 
     private writeInteral(register: RegisterDefinition, value: number, force = false, timeoutMsec = DEFAULT_TIMEOUT) {
+        this.logger?.trace('writing register', { register, value });
+
         const raw = value * register.divisionFactor;
         if (!force && (
             register.minValue !== null && raw < register.minValue ||
@@ -98,6 +104,8 @@ export class Nibe {
     private readInternal(register: RegisterDefinition, timeoutMsec = DEFAULT_TIMEOUT): Observable<RegisterValue> {
         const registerCount = register.size === 's32' || register.size === 'u32' ? 2 : 1;
         const readKind = register.type === 'MODBUS_HOLDING_REGISTER' ? 'READ_HOLDING' : 'READ_INPUT';
+
+        this.logger?.trace('reading register', { register });
 
         return this.modbus.readRegisters(readKind, register.address % 10000, registerCount, timeoutMsec).pipe(
             map(v => {

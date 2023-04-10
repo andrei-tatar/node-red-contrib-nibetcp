@@ -1,6 +1,7 @@
 import { combineLatest, concat, defer, interval, EMPTY, Subject, merge, } from 'rxjs';
-import { finalize, catchError, startWith, switchMap, tap, take, first, retry } from 'rxjs/operators';
+import { finalize, catchError, startWith, switchMap, tap, first, retry } from 'rxjs/operators';
 import { ConfigNode, NodeInterface } from '..';
+import { logger } from '../log';
 
 module.exports = function (RED: any) {
     RED.nodes.registerType('nibe-register',
@@ -12,6 +13,8 @@ module.exports = function (RED: any) {
                 return;
             }
 
+            const log = logger?.scope(`reg-${config.id}`);
+
             const forceWrite = !!config.force;
             const timeoutMsec = (+config.timeout || 1) * 1000;
             const intervalMsec = (+config.interval || 1) * 1000;
@@ -21,6 +24,7 @@ module.exports = function (RED: any) {
             const subscription = concat(
                 defer(() => {
                     consecutiveErrors = 0;
+                    log?.trace('starting subscription');
                     this.status({ fill: 'yellow', text: 'standby' })
                     return EMPTY;
                 }),
@@ -32,21 +36,30 @@ module.exports = function (RED: any) {
                     ),
                 ])
             ).pipe(
-                switchMap(([n]) => n.readRegister(config.register, timeoutMsec).pipe(
-                    catchError(err => {
-                        this.warn(`Error reading ${config.register}: ${err}`);
-                        this.status({ fill: 'red', text: `${err}` })
-                        if (++consecutiveErrors >= 3) {
-                            nibeConfig.reset();
-                        };
-                        return EMPTY;
-                    }),
-                )),
+                switchMap(([n]) => {
+                    log?.trace('reading register', { register: config.register });
+                    return n.readRegister(config.register, timeoutMsec).pipe(
+                        catchError(err => {
+                            log?.trace('error reading', { register: config.register, err });
+                            this.warn(`Error reading ${config.register}: ${err}`);
+                            this.status({ fill: 'red', text: `${err}` })
+                            if (++consecutiveErrors >= 3) {
+                                log?.trace('3 consecutive errors, reseting config');
+                                nibeConfig.reset();
+                            };
+                            return EMPTY;
+                        })
+                    );
+                }),
                 tap(v => {
+                    log?.trace('got response', { value: v.formatted });
                     this.status({ fill: 'blue', text: v.formatted });
                     consecutiveErrors = 0;
                 }),
-                finalize(() => this.status({ fill: 'red', text: 'disconnected' })),
+                finalize(() => {
+                    log?.trace('disconnected');
+                    this.status({ fill: 'red', text: 'disconnected' });
+                }),
                 retry({ delay: 20000 }),
             ).subscribe({
                 next: (value) => this.send({ payload: value, topic: config.topic }),

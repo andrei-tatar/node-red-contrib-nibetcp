@@ -3,6 +3,7 @@ import { join as pathJoin } from 'path';
 import { debounceTime, first, ignoreElements, share, switchMap } from 'rxjs/operators';
 import { ConfigNode, NodeInterface } from '..';
 import { Nibe } from '../communication/nibe';
+import { logger } from '../log';
 
 module.exports = function (RED: any) {
     RED.nodes.registerType('nibe-config',
@@ -19,14 +20,18 @@ module.exports = function (RED: any) {
 
             const registerFile = config.registerFile || pathJoin(__dirname, '../../registers.csv');
             const reset$ = new Subject<void>();
+            const log = logger?.scope(`config`);
 
             this.nibe$ = merge(
-                Nibe.createTcp(address, registerFile),
+                Nibe.createTcp(address, registerFile, log),
                 reset$.pipe(
                     debounceTime(1000),
                     first(),
                     switchMap(_ =>
-                        throwError(() => new Error('Reset connection'))
+                        throwError(() => {
+                            log?.trace('reseting connection');
+                            return new Error('Reset connection');
+                        })
                     ),
                     ignoreElements(),
                 ),
