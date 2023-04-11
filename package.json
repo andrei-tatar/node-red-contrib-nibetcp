@@ -1,6 +1,6 @@
 {
   "name": "@andrei-tatar/node-red-contrib-nibetcp",
-  "version": "1.4.4",
+  "version": "1.4.5",
   "description": "Node-red integration for Nibe S series heatpumps using modbus over TCP",
   "keywords": [
     "node-red",
