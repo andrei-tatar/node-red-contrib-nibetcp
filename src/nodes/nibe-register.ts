@@ -1,5 +1,5 @@
 import { combineLatest, concat, defer, interval, EMPTY, Subject, merge, } from 'rxjs';
-import { finalize, catchError, startWith, switchMap, tap, first, retry } from 'rxjs/operators';
+import { finalize, catchError, startWith, switchMap, tap, first, retry, takeUntil, timeout, concatMap } from 'rxjs/operators';
 import { ConfigNode, NodeInterface } from '..';
 import { logger } from '../log';
 
@@ -16,16 +16,17 @@ module.exports = function (RED: any) {
             const log = logger?.scope(`reg-${config.id}`);
 
             const forceWrite = !!config.force;
-            let timeoutMsec = (+config.timeout || 1) * 3000;
-            const intervalMsec = (+config.interval || 1) * 5000;
-            const forceRead = new Subject<void>();
+            let timeoutMsec = (+config.timeout || 3) * 1000;
+            const intervalMsec = (+config.interval || 10) * 1000;
+            const forceRead$ = new Subject<void>();
+            const close$ = new Subject<void>();
             let consecutiveErrors = 0;
 
             if (timeoutMsec >= intervalMsec - 500) {
                 timeoutMsec = intervalMsec - 500;
             }
 
-            const subscription = concat(
+            concat(
                 defer(() => {
                     consecutiveErrors = 0;
                     log?.trace('starting subscription');
@@ -36,13 +37,14 @@ module.exports = function (RED: any) {
                     nibeConfig.nibe$,
                     merge(
                         interval(intervalMsec).pipe(startWith(0)),
-                        forceRead,
+                        forceRead$,
                     ),
                 ])
             ).pipe(
-                switchMap(([n]) => {
+                concatMap(([n]) => {
                     log?.trace('reading register');
-                    return n.readRegister(config.register, timeoutMsec).pipe(
+                    return n.readRegister(config.register).pipe(
+                        timeout(timeoutMsec),
                         catchError(err => {
                             log?.trace('error reading');
                             this.warn(`Error reading ${config.register}: ${err}`);
@@ -65,6 +67,7 @@ module.exports = function (RED: any) {
                     this.status({ fill: 'red', text: 'disconnected' });
                 }),
                 retry({ delay: 20000 }),
+                takeUntil(close$),
             ).subscribe({
                 next: (value) => this.send({ payload: value, topic: config.topic }),
                 complete: () => log?.trace('complete!'),
@@ -78,7 +81,8 @@ module.exports = function (RED: any) {
 
                 nibeConfig.nibe$.pipe(
                     first(),
-                    switchMap(n => n.writeRegister(config.register, +msg.payload, forceWrite, timeoutMsec)),
+                    switchMap(n => n.writeRegister(config.register, +msg.payload, forceWrite)),
+                    takeUntil(close$),
                 ).subscribe({
                     error: (err) => {
                         done
@@ -86,12 +90,12 @@ module.exports = function (RED: any) {
                             : this.warn(`Error writing ${msg.payload} to ${config.register}: ${err}`);
                     },
                     complete: () => {
-                        forceRead.next();
+                        forceRead$.next();
                         done?.();
                     },
                 });
             });
 
-            this.on('close', () => subscription.unsubscribe());
+            this.on('close', () => close$.next());
         });
 };

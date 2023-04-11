@@ -33,7 +33,7 @@ export class Nibe {
         );
     }
 
-    readRegister(labelOrAddress: string | number, timeoutMsec: number) {
+    readRegister(labelOrAddress: string | number) {
         return this.registers$.pipe(
             first(),
             map(registers => {
@@ -47,11 +47,10 @@ export class Nibe {
             switchMap(reg => this.readInternal(reg).pipe(
                 retry({ count: 3 }),
             )),
-            timeout(timeoutMsec),
         );
     }
 
-    writeRegister(labelOrAddress: string | number, value: number, force: boolean, timeoutMsec: number) {
+    writeRegister(labelOrAddress: string | number, value: number, force: boolean) {
         return this.registers$.pipe(
             first(),
             map(registers => {
@@ -69,7 +68,6 @@ export class Nibe {
             switchMap(reg => this.writeInteral(reg, value, force).pipe(
                 retry({ count: 3 }),
             )),
-            timeout(timeoutMsec),
             ignoreElements(),
         );
     }

@@ -34,7 +34,7 @@ function readAllRegisters(nibe: Nibe, regs: RegisterDefinition[]) {
     return from(regs).pipe(
         filter(reg => !IGNORE.includes(reg.address)),
         mergeMap(reg =>
-            nibe.readRegister(reg.address, 1000)
+            nibe.readRegister(reg.address)
                 .pipe(
                     catchError(err => {
                         console.warn(`failed reading ${reg.address}: ${err}`);
