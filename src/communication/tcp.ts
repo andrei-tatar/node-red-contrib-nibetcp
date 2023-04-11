@@ -11,14 +11,7 @@ export class Tcp {
         private readonly client: Socket,
         private readonly logger?: Logger,
     ) {
-        client.on('data', msg => {
-            this.logger?.trace('rx', { msg })
-            this._data.next(msg);
-        });
-        client.on('error', err => {
-            this.logger?.trace('error', { err })
-            this._data.error(err);
-        });
+        client.on('data', msg => this._data.next(msg));
     }
 
     static create(address: string, logger?: Logger) {
@@ -60,7 +53,6 @@ export class Tcp {
 
     send(data: Buffer): Observable<void> {
         return new Observable(observer => {
-            this.logger?.trace('tx', { data });
             this.client.write(data, err => {
                 if (err) {
                     observer.error(err);

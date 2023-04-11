@@ -16,10 +16,14 @@ module.exports = function (RED: any) {
             const log = logger?.scope(`reg-${config.id}`);
 
             const forceWrite = !!config.force;
-            const timeoutMsec = (+config.timeout || 1) * 1000;
-            const intervalMsec = (+config.interval || 1) * 1000;
+            let timeoutMsec = (+config.timeout || 1) * 3000;
+            const intervalMsec = (+config.interval || 1) * 5000;
             const forceRead = new Subject<void>();
             let consecutiveErrors = 0;
+
+            if (timeoutMsec >= intervalMsec - 500) {
+                timeoutMsec = intervalMsec - 500;
+            }
 
             const subscription = concat(
                 defer(() => {
@@ -37,10 +41,10 @@ module.exports = function (RED: any) {
                 ])
             ).pipe(
                 switchMap(([n]) => {
-                    log?.trace('reading register', { register: config.register });
+                    log?.trace('reading register');
                     return n.readRegister(config.register, timeoutMsec).pipe(
                         catchError(err => {
-                            log?.trace('error reading', { register: config.register, err });
+                            log?.trace('error reading');
                             this.warn(`Error reading ${config.register}: ${err}`);
                             this.status({ fill: 'red', text: `${err}` })
                             if (++consecutiveErrors >= 3) {
@@ -63,6 +67,7 @@ module.exports = function (RED: any) {
                 retry({ delay: 20000 }),
             ).subscribe({
                 next: (value) => this.send({ payload: value, topic: config.topic }),
+                complete: () => log?.trace('complete!'),
             });
 
             this.on('input', (msg, _, done) => {

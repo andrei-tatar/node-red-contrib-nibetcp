@@ -1,7 +1,6 @@
 import { merge, Observable } from 'rxjs';
 import { Tcp } from './tcp';
 import { concatMap, filter, first, ignoreElements, map, scan, share, tap, timeout } from 'rxjs/operators';
-import { Logger } from '../log';
 
 const LABELS_BY_CODEID = new Map<number, string>([
     [3, 'READ_HOLDING'],
@@ -25,7 +24,6 @@ export class Modbus {
 
     constructor(
         private readonly tcp: Tcp,
-        private readonly logger?: Logger,
     ) {
 
         this.packages$ = this.tcp.data$.pipe(
@@ -125,17 +123,14 @@ export class Modbus {
             first(),
             map(v => {
                 if ('exception' in v) {
-                    this.logger?.trace('tx: error', { startAddress, functionCode: v.functionCode, exception: v.exception });
                     throw new Error(`Error while reading register ${startAddress}: (${v.functionCode} - ${v.exception})`);
                 }
 
                 if (v.functionCode !== kind) {
-                    this.logger?.trace('rx: invalid package', { kind, functionCode: v.functionCode });
                     //we already filter, this shouldn't happen
                     throw new Error();
                 }
 
-                this.logger?.trace('rx', { v });
                 return v;
             }),
         );
@@ -144,7 +139,6 @@ export class Modbus {
 
     writeRegisters(startAddress: number, data: Buffer, timeoutMsec = 1000) {
         if (data.length % 2 !== 0 || data.length === 0) {
-            this.logger?.trace('error writing, invalid data length', { length: data.length });
             throw new Error(`Invalid data length ${data.length}`);
         }
 
@@ -174,12 +168,10 @@ export class Modbus {
             first(),
             map(v => {
                 if ('exception' in v) {
-                    this.logger?.trace('rx: error', { startAddress, functionCode: v.functionCode, exception: v.exception });
                     throw new Error(`Error while reading register ${startAddress}: (${v.functionCode} - ${v.exception})`);
                 }
                 if (v.functionCode !== writeType) {
                     //we already filter, this shouldn't happen
-                    this.logger?.trace('tx: invalid package', { writeType, functionCode: v.functionCode });
                     throw new Error();
                 }
 
