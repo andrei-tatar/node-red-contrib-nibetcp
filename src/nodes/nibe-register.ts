@@ -22,10 +22,6 @@ module.exports = function (RED: any) {
             const close$ = new Subject<void>();
             let consecutiveErrors = 0;
 
-            if (timeoutMsec >= intervalMsec - 500) {
-                timeoutMsec = intervalMsec - 500;
-            }
-
             concat(
                 defer(() => {
                     consecutiveErrors = 0;
@@ -43,8 +39,7 @@ module.exports = function (RED: any) {
             ).pipe(
                 concatMap(([n]) => {
                     log?.trace('reading register');
-                    return n.readRegister(config.register).pipe(
-                        timeout(timeoutMsec),
+                    return n.readRegister(config.register, timeoutMsec).pipe(
                         catchError(err => {
                             log?.trace('error reading');
                             this.warn(`Error reading ${config.register}: ${err}`);
@@ -81,7 +76,7 @@ module.exports = function (RED: any) {
 
                 nibeConfig.nibe$.pipe(
                     first(),
-                    switchMap(n => n.writeRegister(config.register, +msg.payload, forceWrite)),
+                    switchMap(n => n.writeRegister(config.register, +msg.payload, forceWrite, timeoutMsec)),
                     takeUntil(close$),
                 ).subscribe({
                     error: (err) => {
