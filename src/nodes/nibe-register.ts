@@ -1,6 +1,6 @@
-import { combineLatest, concat, defer, interval, EMPTY, Subject, merge, } from 'rxjs';
-import { finalize, catchError, startWith, switchMap, tap, first, retry, takeUntil, timeout, concatMap } from 'rxjs/operators';
-import { ConfigNode, NodeInterface } from '..';
+import { combineLatest, concat, defer, interval, EMPTY, Subject, merge, ReplaySubject, } from 'rxjs';
+import { finalize, catchError, startWith, tap, retry, takeUntil, concatMap, withLatestFrom, filter } from 'rxjs/operators';
+import { ConfigNode, NodeInterface, isDefined } from '..';
 import { logger } from '../log';
 
 module.exports = function (RED: any) {
@@ -20,7 +20,15 @@ module.exports = function (RED: any) {
             const intervalMsec = (+config.interval || 10) * 1000;
             const forceRead$ = new Subject<void>();
             const close$ = new Subject<void>();
+            const write$ = new ReplaySubject<number | null>(1);
             let consecutiveErrors = 0;
+
+            const resetConnectionOnConsecutiveErrors = () => {
+                if (++consecutiveErrors >= 3) {
+                    log?.trace('3 consecutive errors, reseting config');
+                    nibeConfig.reset();
+                };
+            };
 
             concat(
                 defer(() => {
@@ -44,10 +52,7 @@ module.exports = function (RED: any) {
                             log?.trace('error reading');
                             this.warn(`Error reading ${config.register}: ${err}`);
                             this.status({ fill: 'red', text: `${err}` })
-                            if (++consecutiveErrors >= 3) {
-                                log?.trace('3 consecutive errors, reseting config');
-                                nibeConfig.reset();
-                            };
+                            resetConnectionOnConsecutiveErrors();
                             return EMPTY;
                         })
                     );
@@ -68,27 +73,40 @@ module.exports = function (RED: any) {
                 complete: () => log?.trace('complete!'),
             });
 
+
+            write$.pipe(
+                filter(isDefined),
+                withLatestFrom(nibeConfig.nibe$),
+                concatMap(([value, nibeConnection]) =>
+                    nibeConnection
+                        .writeRegister(config.register, value, forceWrite, timeoutMsec)
+                        .pipe(
+                            tap({
+                                error: (err) => {
+                                    this.warn(`Error writing ${value} to ${config.register}: ${err}`);
+                                    this.status({ fill: 'red', text: `${err}` })
+                                    resetConnectionOnConsecutiveErrors();
+                                },
+                                complete: () => {
+                                    write$.next(null);
+                                    forceRead$.next();
+                                    consecutiveErrors = 0;
+                                },
+                            }),
+                            takeUntil(close$),
+                        )
+                ),
+                retry({ delay: 10000 }),
+            ).subscribe();
+
             this.on('input', (msg, _, done) => {
                 if (config.filter && config.topic && msg.topic !== config.topic) {
                     done?.();
                     return;
                 }
 
-                nibeConfig.nibe$.pipe(
-                    first(),
-                    switchMap(n => n.writeRegister(config.register, +msg.payload, forceWrite, timeoutMsec)),
-                    takeUntil(close$),
-                ).subscribe({
-                    error: (err) => {
-                        done
-                            ? done?.(err)
-                            : this.warn(`Error writing ${msg.payload} to ${config.register}: ${err}`);
-                    },
-                    complete: () => {
-                        forceRead$.next();
-                        done?.();
-                    },
-                });
+                write$.next(+msg.payload);
+                done?.();
             });
 
             this.on('close', () => close$.next());

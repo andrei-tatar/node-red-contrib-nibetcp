@@ -1,6 +1,10 @@
 import { Observable } from 'rxjs';
 import { Nibe } from './communication/nibe';
 
+export function isDefined<T>(value: T | null | undefined): value is T {
+    return value !== undefined && value !== null;
+}
+
 export interface NodeMessage extends Record<string, any> {
     payload: any;
     topic?: string;
